@@ -1,4 +1,3 @@
-
 import MainHeader from "@/components/MainHeader";
 import SearchInput from "@/components/SearchInput";
 
@@ -8,8 +7,8 @@ interface IndexProps {
 
 const Index = ({ onStartChat }: IndexProps) => {
   return (
-    <main className="flex-1 p-8">
-      <div className="max-w-4xl mx-auto pt-12">
+    <main className="flex-1 p-8 flex items-center justify-center">
+      <div className="max-w-4xl mx-auto">
         <MainHeader />
         <SearchInput onEnter={onStartChat} />
       </div>

@@ -8,7 +8,6 @@ const Sidebar = () => {
     { icon: <ArrowUpRight className="w-5 h-5" />, label: "Promote", path: "/" },
     { icon: <LayoutGrid className="w-5 h-5" />, label: "Process", path: "/process" },
     { icon: <MessageSquare className="w-5 h-5" />, label: "Chat", path: "/chat" },
-    { icon: <MousePointer2 className="w-5 h-5" />, label: "Hover", path: "/hover" },
   ];
 
   return (
@@ -28,7 +27,7 @@ const Sidebar = () => {
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group ${
                   location.pathname === item.path
                     ? "bg-primary text-white"
-                    : "hover:bg-sidebar-hover"
+                    : "hover:bg-sidebar-hover hover:translate-x-1"
                 }`}
               >
                 <span className="transition-transform duration-200 group-hover:scale-110">

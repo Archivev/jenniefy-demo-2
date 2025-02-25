@@ -1,4 +1,3 @@
-
 import { ArrowUpRight } from "lucide-react";
 import { useState, ChangeEvent, useRef, useEffect } from "react";
 
@@ -38,7 +37,7 @@ const SearchInput = ({ onEnter }: SearchInputProps) => {
   }, []);
 
   return (
-    <div className="relative w-full max-w-4xl my-16">
+    <div className="relative w-full max-w-4xl mt-12">
       <div className="absolute left-6 top-6">
         <ArrowUpRight className="w-6 h-6 text-gray-300" />
       </div>

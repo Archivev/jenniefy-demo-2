@@ -1,19 +1,18 @@
-
 const MainHeader = () => {
   return (
-    <div className="mb-12 animate-fade-in">
+    <div className="animate-fade-in">
       <h1 className="text-4xl font-bold mb-4">
         Hi, I'm{" "}
-        <span className="inline-block bg-gradient-to-r from-[#352F44] to-[#5C5470] text-transparent bg-clip-text">
+        <span className="inline-block bg-gradient-to-r from-[#171721] via-[#8B4AAC] to-[#3E1DCE] text-transparent bg-clip-text">
           Jennie
         </span>
       </h1>
       <h2 className="text-4xl font-bold">
         Promote{" "}
-        <span className="inline-block bg-gradient-to-r from-[#5C5470] to-[#B9B4C7] text-transparent bg-clip-text">
-          anything{" "}
+        <span className="inline-block bg-gradient-to-r from-[#171721] via-[#8B4AAC] to-[#3E1DCE] text-transparent bg-clip-text">
+          anything
         </span>
-        <span className="inline-block bg-gradient-to-r from-[#B9B4C7] to-[#352F44] text-transparent bg-clip-text">
+        <span className="ml-2 inline-block bg-gradient-to-r from-[#8B4AAC] to-[#3E1DCE] text-transparent bg-clip-text">
           now
         </span>
       </h2>

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,9 +30,9 @@ const App = () => {
           <div className="flex min-h-screen bg-white">
             <Sidebar />
             <div className="flex-1 relative overflow-hidden">
-              <div className={`w-full transition-all duration-500 ${showChat ? 'translate-y-[-100vh]' : 'translate-y-0'}`}>
-                <main className="p-8">
-                  <div className="max-w-4xl mx-auto pt-12">
+              <div className={`w-full h-full flex flex-col transition-all duration-500 ${showChat ? 'translate-y-[-100vh]' : 'translate-y-0'}`}>
+                <main className="p-8 w-full flex-1 flex flex-col justify-start pt-[25vh]">
+                  <div className="max-w-4xl w-full mx-auto">
                     <MainHeader />
                     <SearchInput onEnter={handleStartChat} />
                   </div>
