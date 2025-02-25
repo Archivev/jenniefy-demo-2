@@ -8,6 +8,7 @@ import { useState } from "react";
 import Chat from "./components/Chat";
 import { BrowserRouter } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
+import SearchInput from "@/components/SearchInput";
 
 const queryClient = new QueryClient();
 
