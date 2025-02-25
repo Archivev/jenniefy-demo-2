@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "./pages/Index";
 import { useState } from "react";
+import Chat from "./components/Chat";
 
 const queryClient = new QueryClient();
 
