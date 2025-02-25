@@ -81,8 +81,8 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
   }, [initialMessage, typeMessage]);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-gray-100 py-4 px-6 bg-white">
+    <div className="flex flex-col h-screen">
+      <header className="border-b border-gray-100 py-4 px-6 bg-white flex-shrink-0">
         <div className="max-w-4xl mx-auto flex items-center">
           <button 
             onClick={onBack}
@@ -103,7 +103,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
                 message.role === "assistant" ? "" : "flex-row-reverse space-x-reverse"
               }`}
             >
-              <Avatar className="w-10 h-10 mt-1">
+              <Avatar className="w-10 h-10 mt-1 flex-shrink-0">
                 {message.role === "assistant" ? (
                   <>
                     <AvatarImage src="/avatar-ai.png" alt="AI" />
@@ -129,7 +129,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
           ))}
           {isThinking && (
             <div className="flex items-start space-x-4">
-              <Avatar className="w-10 h-10 mt-1">
+              <Avatar className="w-10 h-10 mt-1 flex-shrink-0">
                 <AvatarImage src="/avatar-ai.png" alt="AI" />
                 <AvatarFallback>AI</AvatarFallback>
               </Avatar>
@@ -146,7 +146,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         </div>
       </div>
 
-      <div className="border-t border-gray-100 px-6 py-4 bg-white">
+      <div className="border-t border-gray-100 px-6 py-4 bg-white flex-shrink-0 ml-[240px]">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSubmit} className="relative">
             <input
