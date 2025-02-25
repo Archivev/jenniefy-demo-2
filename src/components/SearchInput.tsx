@@ -1,12 +1,14 @@
 
 import { ArrowUpRight } from "lucide-react";
 import { useState, ChangeEvent, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
-const SearchInput = () => {
+interface SearchInputProps {
+  onEnter: () => void;
+}
+
+const SearchInput = ({ onEnter }: SearchInputProps) => {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const navigate = useNavigate();
 
   const adjustHeight = () => {
     const textarea = textareaRef.current;
@@ -24,7 +26,7 @@ const SearchInput = () => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      navigate("/404");
+      onEnter();
     }
   };
 
@@ -49,7 +51,10 @@ const SearchInput = () => {
           style={{ height: "72px" }}
         />
         <div className="absolute right-6 top-6">
-          <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors">
+          <div 
+            onClick={onEnter}
+            className="w-10 h-10 bg-black rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors"
+          >
             <ArrowUpRight className="w-5 h-5 text-white" />
           </div>
         </div>
