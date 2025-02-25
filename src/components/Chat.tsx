@@ -1,6 +1,7 @@
 
 import { ArrowLeft } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ChatProps {
   onBack: () => void;
@@ -35,12 +36,11 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     setInputValue("");
     setIsThinking(true);
 
-    // Simulate AI thinking and response
     setTimeout(() => {
       setIsThinking(false);
       const aiResponse = {
         role: "assistant",
-        content: "Based on your requirements, I recommend focusing on TikTok and Instagram as your primary platforms. These platforms have a strong presence in the United States and are ideal for product demonstrations. Look for influencers with 10k-50k followers who specifically create content about personal care products or lifestyle content."
+        content: "Based on your requirements, I recommend focusing on TikTok and Instagram as your primary platforms. These platforms have a strong presence in the United States and are ideal for product demonstrations."
       };
       setMessages([...newMessages, aiResponse]);
       setCurrentTypingIndex(newMessages.length);
@@ -81,8 +81,8 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
   }, [initialMessage, typeMessage]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <header className="border-b border-gray-100 py-4 px-6">
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b border-gray-100 py-4 px-6 bg-white">
         <div className="max-w-4xl mx-auto flex items-center">
           <button 
             onClick={onBack}
@@ -99,29 +99,54 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
           {messages.map((message, index) => (
             <div
               key={index}
-              className={`p-4 rounded-2xl ${
-                message.role === "assistant"
-                  ? "bg-gray-50"
-                  : "bg-blue-50"
-              } max-w-3xl`}
+              className={`flex items-start space-x-4 ${
+                message.role === "assistant" ? "" : "flex-row-reverse space-x-reverse"
+              }`}
             >
-              {index === currentTypingIndex ? displayedContent : message.content}
+              <Avatar className="w-10 h-10 mt-1">
+                {message.role === "assistant" ? (
+                  <>
+                    <AvatarImage src="/avatar-ai.png" alt="AI" />
+                    <AvatarFallback>AI</AvatarFallback>
+                  </>
+                ) : (
+                  <>
+                    <AvatarImage src="/avatar-user.png" alt="User" />
+                    <AvatarFallback>Me</AvatarFallback>
+                  </>
+                )}
+              </Avatar>
+              <div
+                className={`p-4 rounded-2xl max-w-[80%] ${
+                  message.role === "assistant"
+                    ? "bg-gray-50"
+                    : "bg-blue-50"
+                }`}
+              >
+                {index === currentTypingIndex ? displayedContent : message.content}
+              </div>
             </div>
           ))}
           {isThinking && (
-            <div className="flex items-center space-x-2 text-gray-400 p-4 bg-gray-50 rounded-2xl">
-              <span className="font-medium">Jennie is thinking</span>
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "200ms" }} />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "400ms" }} />
+            <div className="flex items-start space-x-4">
+              <Avatar className="w-10 h-10 mt-1">
+                <AvatarImage src="/avatar-ai.png" alt="AI" />
+                <AvatarFallback>AI</AvatarFallback>
+              </Avatar>
+              <div className="flex items-center space-x-2 text-gray-400 p-4 bg-gray-50 rounded-2xl">
+                <span className="font-medium">Jennie is thinking</span>
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "200ms" }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "400ms" }} />
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="border-t border-gray-100 px-6 py-4">
+      <div className="border-t border-gray-100 px-6 py-4 bg-white">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSubmit} className="relative">
             <input

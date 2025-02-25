@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import { useState } from "react";
 import Chat from "./components/Chat";
 import { BrowserRouter } from "react-router-dom";
+import Sidebar from "@/components/Sidebar";
 
 const queryClient = new QueryClient();
 
@@ -25,12 +26,19 @@ const App = () => {
         <BrowserRouter>
           <Toaster />
           <Sonner />
-          <div className="relative min-h-screen">
-            <div className={`transition-opacity duration-500 ${showChat ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-              <Index onStartChat={handleStartChat} />
-            </div>
-            <div className={`absolute inset-0 transition-opacity duration-500 ${showChat ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <Chat initialMessage={initialMessage} onBack={() => setShowChat(false)} />
+          <div className="flex min-h-screen bg-white">
+            <Sidebar />
+            <div className="flex-1">
+              <div className={`absolute inset-0 transition-all duration-500 ${showChat ? 'translate-y-[-100vh]' : 'translate-y-0'}`}>
+                <main className="p-8">
+                  <div className="max-w-4xl mx-auto pt-12">
+                    <SearchInput onEnter={handleStartChat} />
+                  </div>
+                </main>
+              </div>
+              <div className={`absolute inset-0 transition-all duration-500 ${showChat ? 'translate-y-0' : 'translate-y-[100vh]'}`}>
+                <Chat initialMessage={initialMessage} onBack={() => setShowChat(false)} />
+              </div>
             </div>
           </div>
         </BrowserRouter>
