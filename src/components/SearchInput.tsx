@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useState, ChangeEvent, useRef, useEffect } from "react";
 
 interface SearchInputProps {
-  onEnter: () => void;
+  onEnter: (value: string) => void;
 }
 
 const SearchInput = ({ onEnter }: SearchInputProps) => {
@@ -26,7 +26,10 @@ const SearchInput = ({ onEnter }: SearchInputProps) => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onEnter();
+      if (value.trim()) {
+        onEnter(value);
+        setValue("");
+      }
     }
   };
 
@@ -52,7 +55,12 @@ const SearchInput = ({ onEnter }: SearchInputProps) => {
         />
         <div className="absolute right-6 top-6">
           <div 
-            onClick={onEnter}
+            onClick={() => {
+              if (value.trim()) {
+                onEnter(value);
+                setValue("");
+              }
+            }}
             className="w-10 h-10 bg-black rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors"
           >
             <ArrowUpRight className="w-5 h-5 text-white" />

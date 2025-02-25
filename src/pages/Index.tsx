@@ -4,7 +4,7 @@ import MainHeader from "@/components/MainHeader";
 import SearchInput from "@/components/SearchInput";
 
 interface IndexProps {
-  onStartChat: () => void;
+  onStartChat: (initialMessage: string) => void;
 }
 
 const Index = ({ onStartChat }: IndexProps) => {

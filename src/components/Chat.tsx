@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 
 interface ChatProps {
   onBack: () => void;
+  initialMessage: string;
 }
 
-const Chat = ({ onBack }: ChatProps) => {
+const Chat = ({ onBack, initialMessage }: ChatProps) => {
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [inputValue, setInputValue] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -50,18 +51,34 @@ const Chat = ({ onBack }: ChatProps) => {
     }, 2000);
   };
 
-  // Initial greeting message with typing effect
   useEffect(() => {
-    const initialMessage = {
-      role: "assistant",
-      content: "I need more information, such as target market, number of promoters, etc., so that I can generate the best plan for you"
+    const setupInitialMessages = async () => {
+      if (initialMessage) {
+        const userMessage = { role: "user", content: initialMessage };
+        const aiMessage = {
+          role: "assistant",
+          content: "I need more information, such as target market, number of promoters, etc., so that I can generate the best plan for you"
+        };
+        
+        setMessages([userMessage]);
+        
+        setTimeout(() => {
+          setIsThinking(true);
+          setTimeout(() => {
+            setIsThinking(false);
+            setMessages([userMessage, aiMessage]);
+            setCurrentTypingIndex(1);
+            setDisplayedContent("");
+            typeMessage(aiMessage.content, () => {
+              setCurrentTypingIndex(-1);
+            });
+          }, 1500);
+        }, 500);
+      }
     };
-    setMessages([initialMessage]);
-    setCurrentTypingIndex(0);
-    typeMessage(initialMessage.content, () => {
-      setCurrentTypingIndex(-1);
-    });
-  }, [typeMessage]);
+
+    setupInitialMessages();
+  }, [initialMessage, typeMessage]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

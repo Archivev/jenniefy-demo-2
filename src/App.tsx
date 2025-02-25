@@ -12,6 +12,12 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [showChat, setShowChat] = useState(false);
+  const [initialMessage, setInitialMessage] = useState("");
+
+  const handleStartChat = (message: string) => {
+    setInitialMessage(message);
+    setShowChat(true);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -21,10 +27,10 @@ const App = () => {
           <Sonner />
           <div className="relative min-h-screen">
             <div className={`transition-opacity duration-500 ${showChat ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-              <Index onStartChat={() => setShowChat(true)} />
+              <Index onStartChat={handleStartChat} />
             </div>
             <div className={`absolute inset-0 transition-opacity duration-500 ${showChat ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <Chat onBack={() => setShowChat(false)} />
+              <Chat initialMessage={initialMessage} onBack={() => setShowChat(false)} />
             </div>
           </div>
         </BrowserRouter>
