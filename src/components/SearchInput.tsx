@@ -1,10 +1,12 @@
 
 import { ArrowUpRight } from "lucide-react";
 import { useState, ChangeEvent, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const SearchInput = () => {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
 
   const adjustHeight = () => {
     const textarea = textareaRef.current;
@@ -19,24 +21,39 @@ const SearchInput = () => {
     adjustHeight();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      navigate("/404");
+    }
+  };
+
   useEffect(() => {
     adjustHeight();
   }, []);
 
   return (
-    <div className="relative w-full max-w-4xl my-12">
-      <div className="absolute left-4 top-4">
-        <ArrowUpRight className="w-6 h-6 text-gray-400" />
+    <div className="relative w-full max-w-4xl my-16">
+      <div className="absolute left-6 top-6">
+        <ArrowUpRight className="w-6 h-6 text-gray-300" />
       </div>
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={handleChange}
-        rows={1}
-        placeholder="Enter the product link or title to find more suitable influencers for promotion"
-        className="w-full pl-12 pr-4 py-4 rounded-lg border border-gray-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none min-h-[60px] max-h-[200px] overflow-y-auto"
-        style={{ height: "60px" }}
-      />
+      <div className="relative">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          rows={1}
+          placeholder="Enter the product link or title to find more suitable influencers for promotion"
+          className="w-full pl-16 pr-16 py-6 rounded-2xl bg-gray-50 border border-gray-100 focus:outline-none focus:border-gray-200 focus:ring-0 transition-all resize-none min-h-[72px] max-h-[200px] overflow-y-auto text-lg placeholder:text-gray-300"
+          style={{ height: "72px" }}
+        />
+        <div className="absolute right-6 top-6">
+          <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors">
+            <ArrowUpRight className="w-5 h-5 text-white" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
