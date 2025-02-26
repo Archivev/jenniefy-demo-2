@@ -118,8 +118,8 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
   }, [initialMessage, typeMessage]);
 
   return (
-    <>
-      <div className="flex flex-col h-screen">
+    <div className={`flex h-screen transition-all duration-500 ${showCreators ? 'pr-[480px]' : ''}`}>
+      <div className="flex-1 flex flex-col min-w-0">
         <header className="border-b border-gray-100 py-4 px-6 bg-white flex-shrink-0">
           <div className="max-w-4xl mx-auto flex items-center">
             <button 
@@ -184,7 +184,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
           </div>
         </div>
 
-        <div className="border-t border-gray-100 px-6 py-4 bg-white flex-shrink-0 ml-[240px]">
+        <div className="border-t border-gray-100 px-6 py-4 bg-white flex-shrink-0">
           <div className="max-w-4xl mx-auto">
             <form onSubmit={handleSubmit} className="relative">
               <input
@@ -219,7 +219,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         creators={mockCreators}
         onClose={() => setShowCreators(false)}
       />
-    </>
+    </div>
   );
 };
 

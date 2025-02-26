@@ -25,6 +25,7 @@ const CreatorSidebar = ({ isOpen, productName, creators, onClose }: CreatorSideb
       className={`fixed top-0 right-0 w-[480px] h-full bg-white border-l border-gray-200 transform transition-transform duration-500 ease-in-out ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
+      style={{ marginLeft: 0 }}
     >
       <div className="flex flex-col h-full">
         <div className="p-6 border-b border-gray-100">
