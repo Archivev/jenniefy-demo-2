@@ -1,6 +1,5 @@
-
 import { ArrowLeft } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CreatorSidebar from "./CreatorSidebar";
 
@@ -17,6 +16,8 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
   const [displayedContent, setDisplayedContent] = useState("");
   const [showCreators, setShowCreators] = useState(false);
   const [productName, setProductName] = useState("Philips Norelco Shaver 2400,Rechargeable..");
+  const [formData, setFormData] = useState<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Mock creators data
   const mockCreators = [
@@ -45,6 +46,100 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     }, 30);
   }, []);
 
+  // 添加滚动到底部的函数，使用平滑滚动效果
+  const scrollToBottom = () => {
+    // 使用更具体的选择器找到消息容器
+    const messageContainer = document.querySelector('.flex-1.overflow-y-auto');
+    if (messageContainer) {
+      // 使用平滑滚动
+      messageContainer.scrollTo({
+        top: messageContainer.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // 当消息列表更新时滚动到底部
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, displayedContent, isThinking]);
+
+  // 处理表单数据变更
+  const handleFormChange = (newFormData: any) => {
+    setFormData(newFormData);
+    
+    // 如果有变更，自动向AI发送消息
+    if (formData) {
+      const changes = getFormChanges(formData, newFormData);
+      if (changes) {
+        const userMessage = {
+          role: "user",
+          content: `I've made the following changes: ${changes}`
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+        
+        // 模拟AI响应
+        setIsThinking(true);
+        setTimeout(() => {
+          setIsThinking(false);
+          const aiResponse = {
+            role: "assistant",
+            content: `I've updated the recommendations based on your changes. ${changes.includes('创作者') ? 'The creator list has been adjusted. ' : ''}${changes.includes('标签') ? 'Results have been filtered according to the new tags. ' : ''}${changes.includes('产品名称') ? 'Product-related recommendations have been updated. ' : ''}`
+          };
+          setMessages(prev => [...prev, aiResponse]);
+          setCurrentTypingIndex(messages.length + 1);
+          setDisplayedContent("");
+          typeMessage(aiResponse.content, () => {
+            setCurrentTypingIndex(-1);
+          });
+        }, 1500);
+      }
+    }
+    
+    setFormData(newFormData);
+  };
+  
+  // 获取表单变更内容
+  const getFormChanges = (oldData: any, newData: any): string | null => {
+    if (!oldData) return null;
+    
+    const changes = [];
+    
+    if (oldData.productName !== newData.productName) {
+      changes.push(`product name changed from "${oldData.productName}" to "${newData.productName}"`);
+    }
+    
+    if (JSON.stringify(oldData.tags) !== JSON.stringify(newData.tags)) {
+      // 找出添加和移除的标签
+      const added = newData.tags.filter((t: string) => !oldData.tags.includes(t));
+      const removed = oldData.tags.filter((t: string) => !newData.tags.includes(t));
+      
+      if (added.length > 0) {
+        changes.push(`add tag: ${added.join(', ')}`);
+      }
+      
+      if (removed.length > 0) {
+        changes.push(`remove tag: ${removed.join(', ')}`);
+      }
+    }
+    
+    if (JSON.stringify(oldData.selectedCreators) !== JSON.stringify(newData.selectedCreators)) {
+      const added = newData.selectedCreators.filter((c: string) => !oldData.selectedCreators.includes(c));
+      const removed = oldData.selectedCreators.filter((c: string) => !newData.selectedCreators.includes(c));
+      
+      if (added.length > 0) {
+        changes.push(`select creator: ${added.join(', ')}`);
+      }
+      
+      if (removed.length > 0) {
+        changes.push(`unselect creator: ${removed.join(', ')}`);
+      }
+    }
+    
+    return changes.length > 0 ? changes.join('；') : null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
@@ -60,7 +155,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         setIsThinking(false);
         const aiResponse = {
           role: "assistant",
-          content: "Based on your requirements, I've found some creators that match your criteria. You can review them in the sidebar."
+          content: "Based on your requirements, I've found some creators that match your criteria. You can review them in the sidebar. Feel free to adjust the tags or select suitable creators, and I'll optimize my recommendations based on your choices."
         };
         setMessages([...newMessages, aiResponse]);
         setCurrentTypingIndex(newMessages.length);
@@ -76,7 +171,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         setIsThinking(false);
         const aiResponse = {
           role: "assistant",
-          content: "I need more information, such as target market, number of promoters, etc., so that I can generate the best plan for you"
+          content: "I need more information, such as target market, number of promoters, etc., so that I can generate the best plan for you."
         };
         setMessages([...newMessages, aiResponse]);
         setCurrentTypingIndex(newMessages.length);
@@ -94,7 +189,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         const userMessage = { role: "user", content: initialMessage };
         const aiMessage = {
           role: "assistant",
-          content: "I need more information, such as target market, number of promoters, etc., so that I can generate the best plan for you"
+          content: "I need more information, such as target market, number of promoters, etc., so that I can generate the best plan for you."
         };
         
         setMessages([userMessage]);
@@ -181,6 +276,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
         </div>
 
@@ -218,6 +314,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         productName={productName}
         creators={mockCreators}
         onClose={() => setShowCreators(false)}
+        onFormChange={handleFormChange}
       />
     </div>
   );
