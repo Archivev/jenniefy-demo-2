@@ -1,5 +1,5 @@
 
-import { X, Instagram, TikTok, Youtube, MapPin, Check } from "lucide-react";
+import { X, Instagram, Youtube, MapPin, Check, Share2 } from "lucide-react";
 
 interface Creator {
   name: string;
@@ -60,7 +60,7 @@ const CreatorSidebar = ({ isOpen, productName, creators, onClose }: CreatorSideb
                   <h3 className="font-medium">{creator.name}</h3>
                   <div className="flex items-center space-x-2 mt-1 text-sm text-gray-500">
                     <Instagram className="w-4 h-4" />
-                    <TikTok className="w-4 h-4" />
+                    <Share2 className="w-4 h-4" />
                     <Youtube className="w-4 h-4" />
                     <MapPin className="w-4 h-4" />
                     <span>{creator.location}</span>
