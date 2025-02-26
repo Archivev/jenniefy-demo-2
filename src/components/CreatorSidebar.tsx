@@ -266,7 +266,7 @@ const CreatorSidebar = ({ isOpen, productName, creators: initialCreators, onClos
 
         <div className="p-6 border-t border-gray-100">
           <button className="w-full py-3.5 bg-[#16181d] text-white rounded-xl hover:bg-black transition-colors">
-            邀请所有相似创作者
+            Invite All Similar Creators
           </button>
         </div>
       </div>
