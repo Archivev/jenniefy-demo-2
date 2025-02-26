@@ -118,7 +118,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
   }, [initialMessage, typeMessage]);
 
   return (
-    <div className={`flex h-screen transition-all duration-500 ${showCreators ? 'pr-[480px]' : ''}`}>
+    <div className={`flex h-screen transition-all duration-500 ${showCreators ? 'w-[50%]' : 'w-[100%]'}`}>
       <div className="flex-1 flex flex-col min-w-0">
         <header className="border-b border-gray-100 py-4 px-6 bg-white flex-shrink-0">
           <div className="max-w-4xl mx-auto flex items-center">

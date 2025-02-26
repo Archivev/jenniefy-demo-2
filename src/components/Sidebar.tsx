@@ -26,7 +26,7 @@ const Sidebar = () => {
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group ${
                   location.pathname === item.path
-                    ? "bg-primary text-white"
+                    ? "bg-black text-white"
                     : "hover:bg-sidebar-hover hover:translate-x-1"
                 }`}
               >
