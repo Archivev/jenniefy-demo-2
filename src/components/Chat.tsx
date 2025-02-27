@@ -189,7 +189,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
               
               // 根据不同状态执行不同操作
               switch (data.state) {
-                case "collecting_audience_info":
+                case "searching_influencers":
                   setShowCreators(true);
                   break;
                 case "preparing_email":
