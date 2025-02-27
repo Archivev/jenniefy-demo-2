@@ -140,77 +140,121 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     return changes.length > 0 ? changes.join('；') : null;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
-
-    const newMessages = [...messages, { role: "user", content: inputValue }];
-    setMessages(newMessages);
-    setInputValue("");
-    setIsThinking(true);
-
-    // If this is the second message, show the creator sidebar
-    if (messages.length === 2) {
-      setTimeout(() => {
-        setIsThinking(false);
-        const aiResponse = {
-          role: "assistant",
-          content: "Based on your requirements, I've found some creators that match your criteria. You can review them in the sidebar. Feel free to adjust the tags or select suitable creators, and I'll optimize my recommendations based on your choices."
-        };
-        setMessages([...newMessages, aiResponse]);
-        setCurrentTypingIndex(newMessages.length);
-        setDisplayedContent("");
-        typeMessage(aiResponse.content, () => {
-          setCurrentTypingIndex(-1);
-          setShowCreators(true);
-        });
-      }, 2000);
-    } else {
-      // First message response
-      setTimeout(() => {
-        setIsThinking(false);
-        const aiResponse = {
-          role: "assistant",
-          content: "I need more information, such as target market, number of promoters, etc., so that I can generate the best plan for you."
-        };
-        setMessages([...newMessages, aiResponse]);
-        setCurrentTypingIndex(newMessages.length);
-        setDisplayedContent("");
-        typeMessage(aiResponse.content, () => {
-          setCurrentTypingIndex(-1);
-        });
-      }, 2000);
-    }
-  };
-
   useEffect(() => {
     const setupInitialMessages = async () => {
       if (initialMessage) {
-        const userMessage = { role: "user", content: initialMessage };
-        const aiMessage = {
-          role: "assistant",
-          content: "I need more information, such as target market, number of promoters, etc., so that I can generate the best plan for you."
-        };
-        
-        setMessages([userMessage]);
-        
-        setTimeout(() => {
-          setIsThinking(true);
-          setTimeout(() => {
-            setIsThinking(false);
-            setMessages([userMessage, aiMessage]);
-            setCurrentTypingIndex(1);
-            setDisplayedContent("");
-            typeMessage(aiMessage.content, () => {
-              setCurrentTypingIndex(-1);
-            });
-          }, 1500);
-        }, 500);
+        // 使用相同的流式处理函数处理初始消息
+        handleUserInput(initialMessage, (chunk, done) => {
+          // 初始消息的流式响应处理
+        });
       }
     };
 
     setupInitialMessages();
-  }, [initialMessage, typeMessage]);
+  }, [initialMessage]); // 仅在 initialMessage 变化时执行
+
+  // 处理用户输入并发送到后端
+  const handleUserInput = async (input: string, onStreamResponse: (chunk: string, done: boolean) => void) => {
+    // 添加用户消息到消息列表
+    const newMessages = [...messages, { role: "user", content: input }];
+    setMessages(newMessages);
+    
+    // 显示AI思考状态
+    setIsThinking(true);
+    
+    try {
+      // 创建 EventSource 连接
+      const eventSource = new EventSource(`http://localhost:5001/chat?message=${encodeURIComponent(input)}`);
+      
+      // 创建一个空的AI响应
+      const aiResponse = { role: "assistant", content: "" };
+      setMessages([...newMessages, aiResponse]);
+      setCurrentTypingIndex(newMessages.length);
+      setDisplayedContent("");
+      
+      // 处理流式响应
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.done) {
+            // 响应完成
+            eventSource.close();
+            setIsThinking(false);
+            setCurrentTypingIndex(-1);
+            
+            // 检查并处理状态更新
+            if (data.state) {
+              console.log("当前对话状态:", data.state);
+              
+              // 根据不同状态执行不同操作
+              switch (data.state) {
+                case "collecting_audience_info":
+                  setShowCreators(true);
+                  break;
+                case "preparing_email":
+                  // 可能显示邮件编辑界面
+                  break;
+                case "initial":
+                  // 重置界面
+                  setShowCreators(false);
+                  break;
+                default:
+                  // 其他状态处理
+                  break;
+              }
+            }
+            
+            onStreamResponse("", true);
+            return;
+          }
+          
+          if (data.content) {
+            // 更新显示内容
+            setDisplayedContent(prev => prev + data.content);
+            
+            // 更新消息列表中的AI响应
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1].content += data.content;
+              return updated;
+            });
+            
+            // 通知父组件有新的响应块
+            onStreamResponse(data.content, false);
+          }
+        } catch (error) {
+          console.error("Error parsing SSE message:", error);
+        }
+      };
+      
+      // 处理错误
+      eventSource.onerror = (error) => {
+        console.error("SSE Error:", error);
+        eventSource.close();
+        setIsThinking(false);
+        setCurrentTypingIndex(-1);
+        onStreamResponse("", true);
+      };
+    } catch (error) {
+      console.error("Error setting up SSE:", error);
+      setIsThinking(false);
+      setCurrentTypingIndex(-1);
+    }
+  };
+
+  // 修改 handleSubmit 函数
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+
+    // 使用新的流式处理函数
+    handleUserInput(inputValue, (chunk, done) => {
+      // 可以在这里添加额外的处理逻辑
+    });
+    
+    setInputValue("");
+  };
 
   return (
     <div className={`flex h-screen transition-all duration-500 ${showCreators ? 'w-[50%]' : 'w-[100%]'}`}>
