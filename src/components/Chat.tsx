@@ -291,33 +291,47 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
   };
 
   // 获取创作者的函数
-  const fetchCreators = async (userMessage: string, currentTags: string[]) => {
-    setIsLoadingCreators(true);
+  // ... existing code ...
+const fetchCreators = async (userMessage: string, currentTags: string[]) => {
+  setIsLoadingCreators(true);
+  
+  try {
+    // 构建请求体
+    const requestBody = {
+      query: userMessage,
+      additional_query: currentTags.join(', '), // 将标签作为额外查询条件
+      product_info: {
+        name: productName,
+        category: "" // 如果有类目信息，可以在这里添加
+      }
+    };
     
-    try {
-      // 构建请求体
-      const requestBody = {
-        query: userMessage,
-        additional_query: currentTags.join(', '), // 将标签作为额外查询条件
-        product_info: {
-          name: productName,
-          category: "" // 如果有类目信息，可以在这里添加
+    const response = await fetch('http://localhost:5001/search_creators', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.creators) {
+      // 更新创作者列表
+      const formattedCreators = await Promise.all(data.creators.map(async (creator: any) => {
+        // 获取创作者头像
+        let avatarUrl = "";
+        try {
+          const avatarResponse = await fetch(`http://172.24.16.10:8050/prod-api/opensearch/genIndexDataByTtsCreatorId?tts_creator_id=${creator.tts_creator_id}`);
+          const avatarData = await avatarResponse.json();
+          if (avatarData && avatarData.creatorAuthorIcon) {
+            avatarUrl = avatarData.creatorAuthorIcon;
+          }
+        } catch (error) {
+          console.error("获取创作者头像失败:", error);
         }
-      };
-      
-      const response = await fetch('http://localhost:5001/search_creators', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-      
-      const data = await response.json();
-      
-      if (data.success && data.creators) {
-        // 更新创作者列表
-        const formattedCreators = data.creators.map((creator: any) => ({
+        
+        return {
           creator_handle: creator.creator_handle,
           portrait: "18-30", // 默认值
           location: creator.country || "US",
@@ -326,27 +340,30 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
           age: "18-30",
           platforms: ["instagram", "tiktok", "youtube"],
           period: "10W",
-          id: creator.tts_creator_id
-        }));
-        
-        setCreators(formattedCreators);
-        
-        // 更新表单数据中的创作者
-        setFormData(prev => ({
-          ...prev,
-          selectedCreators: []
-        }));
-      } else {
-        console.error("获取创作者失败:", data.error);
-        setCreators([]);
-      }
-    } catch (error) {
-      console.error("获取创作者请求出错:", error);
+          id: creator.tts_creator_id,
+          avatar: avatarUrl // 添加头像URL
+        };
+      }));
+      
+      setCreators(formattedCreators);
+      
+      // 更新表单数据中的创作者
+      setFormData(prev => ({
+        ...prev,
+        selectedCreators: []
+      }));
+    } else {
+      console.error("获取创作者失败:", data.error);
       setCreators([]);
-    } finally {
-      setIsLoadingCreators(false);
     }
-  };
+  } catch (error) {
+    console.error("获取创作者请求出错:", error);
+    setCreators([]);
+  } finally {
+    setIsLoadingCreators(false);
+  }
+};
+// ... existing code ...
 
   // 修改搜索达人的主函数，先获取标签，再获取创作者
   const searchCreators = async () => {

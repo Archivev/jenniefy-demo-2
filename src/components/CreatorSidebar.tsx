@@ -12,6 +12,8 @@ interface Creator {
   platforms: string[];
   period: string;
   selected?: boolean;
+  avatar?: string;
+  id?: string;
 }
 
 export interface CreatorSidebarProps {
@@ -201,30 +203,48 @@ const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: init
                   className={`p-4 rounded-xl transition-colors ${creator.selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <div className="space-y-2">
-                      <h3 className="font-medium">
-                        <a 
-                          href={`https://www.tiktok.com/@${creator.creator_handle}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:translate-y-[-2px] transition-transform duration-200 inline-block"
-                        >
-                          {creator.creator_handle}
-                        </a>
-                      </h3>
-                      <div className="flex items-center space-x-3 text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <Instagram className="w-4 h-4" />
-                          <TikTokIcon className="w-4 h-4" />
-                          <Youtube className="w-4 h-4" />
+                    <div className="flex items-start space-x-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                        {creator.avatar ? (
+                          <img 
+                            src={creator.avatar} 
+                            alt={creator.creator_handle} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=' + creator.creator_handle.charAt(0).toUpperCase();
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                            {creator.creator_handle.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="font-medium">
+                          <a 
+                            href={`https://www.tiktok.com/@${creator.creator_handle}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:translate-y-[-2px] transition-transform duration-200 inline-block"
+                          >
+                            {creator.creator_handle}
+                          </a>
+                        </h3>
+                        <div className="flex items-center space-x-3 text-gray-500">
+                          <div className="flex items-center space-x-1">
+                            <Instagram className="w-4 h-4" />
+                            <TikTokIcon className="w-4 h-4" />
+                            <Youtube className="w-4 h-4" />
+                          </div>
+                          <span className="text-gray-300">|</span>
+                          <div className="flex items-center space-x-1">
+                            <MapPin className="w-4 h-4" />
+                            <span className="text-sm">{creator.location}</span>
+                          </div>
+                          <span className="text-gray-300">|</span>
+                          <span className="text-sm">{creator.followers} Followers</span>
                         </div>
-                        <span className="text-gray-300">|</span>
-                        <div className="flex items-center space-x-1">
-                          <MapPin className="w-4 h-4" />
-                          <span className="text-sm">{creator.location}</span>
-                        </div>
-                        <span className="text-gray-300">|</span>
-                        <span className="text-sm">{creator.followers} Followers</span>
                       </div>
                     </div>
                     <div className="flex space-x-2">
