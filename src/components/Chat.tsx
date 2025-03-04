@@ -18,21 +18,10 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
   const [productName, setProductName] = useState("Philips Norelco Shaver 2400,Rechargeable..");
   const [formData, setFormData] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Mock creators data
-  const mockCreators = [
-    {
-      name: "Jennifer",
-      portrait: "18-30",
-      location: "US",
-      followers: "123456",
-      er: "55%",
-      age: "18-30",
-      platforms: ["instagram", "tiktok", "youtube"],
-      period: "10W"
-    },
-    // ... Add more mock creators as needed
-  ];
+  const [isLoadingCreators, setIsLoadingCreators] = useState(false);
+  const [creators, setCreators] = useState<any[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
 
   const typeMessage = useCallback((content: string, callback: () => void) => {
     let index = 0;
@@ -65,11 +54,14 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
   }, [messages, displayedContent, isThinking]);
 
   // 处理表单数据变更
-  const handleFormChange = (newFormData: any) => {
-    setFormData(newFormData);
+  const handleFormChange = (newFormData: any, isUserAction = false) => {
+    // 避免重复设置相同的数据
+    if (JSON.stringify(formData) === JSON.stringify(newFormData)) {
+      return;
+    }
     
-    // 如果有变更，自动向AI发送消息
-    if (formData) {
+    // 如果有变更，且是用户主动操作，自动向AI发送消息
+    if (formData && isUserAction) {
       const changes = getFormChanges(formData, newFormData);
       if (changes) {
         const userMessage = {
@@ -189,8 +181,10 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
               
               // 根据不同状态执行不同操作
               switch (data.state) {
-                case "searching_influencers":
+                case "searchinginfluencers":
                   setShowCreators(true);
+                  // 发起达人搜索请求
+                  searchCreators();
                   break;
                 case "preparing_email":
                   // 可能显示邮件编辑界面
@@ -254,6 +248,139 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     });
     
     setInputValue("");
+  };
+
+  // 获取标签的函数
+  const fetchTags = async (userMessage: string) => {
+    setIsLoadingTags(true);
+    
+    try {
+      const response = await fetch('http://localhost:5001/get_tags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          additional_query: userMessage
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        const fetchedTags = data.tags;
+        setTags(fetchedTags);
+        
+        // 更新表单数据中的标签
+        setFormData(prev => ({
+          ...prev,
+          tags: fetchedTags
+        }));
+        
+        return fetchedTags;
+      } else {
+        console.error("获取标签失败:", data.error);
+        return [];
+      }
+    } catch (error) {
+      console.error("获取标签请求出错:", error);
+      return [];
+    } finally {
+      setIsLoadingTags(false);
+    }
+  };
+
+  // 获取创作者的函数
+  const fetchCreators = async (userMessage: string, currentTags: string[]) => {
+    setIsLoadingCreators(true);
+    
+    try {
+      // 构建请求体
+      const requestBody = {
+        query: userMessage,
+        additional_query: currentTags.join(', '), // 将标签作为额外查询条件
+        product_info: {
+          name: productName,
+          category: "" // 如果有类目信息，可以在这里添加
+        }
+      };
+      
+      const response = await fetch('http://localhost:5001/search_creators', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.creators) {
+        // 更新创作者列表
+        const formattedCreators = data.creators.map((creator: any) => ({
+          creator_handle: creator.creator_handle,
+          portrait: "18-30", // 默认值
+          location: creator.country || "US",
+          followers: formatNumber(creator.author_fans),
+          er: "5%", // 默认值，可以根据实际数据计算
+          age: "18-30",
+          platforms: ["instagram", "tiktok", "youtube"],
+          period: "10W",
+          id: creator.tts_creator_id
+        }));
+        
+        setCreators(formattedCreators);
+        
+        // 更新表单数据中的创作者
+        setFormData(prev => ({
+          ...prev,
+          selectedCreators: []
+        }));
+      } else {
+        console.error("获取创作者失败:", data.error);
+        setCreators([]);
+      }
+    } catch (error) {
+      console.error("获取创作者请求出错:", error);
+      setCreators([]);
+    } finally {
+      setIsLoadingCreators(false);
+    }
+  };
+
+  // 修改搜索达人的主函数，先获取标签，再获取创作者
+  const searchCreators = async () => {
+    try {
+      // 获取最后一条用户消息作为查询
+      const lastUserMessage = [...messages].reverse().find(m => m.role === "user")?.content || "";
+      
+      // 初始化表单数据（如果尚未初始化）
+      if (!formData) {
+        setFormData({
+          productName: productName,
+          tags: [],
+          selectedCreators: []
+        });
+      }
+      
+      // 先获取标签
+      const fetchedTags = await fetchTags(lastUserMessage);
+      
+      // 然后使用获取到的标签来获取创作者
+      await fetchCreators(lastUserMessage, fetchedTags);
+      
+    } catch (error) {
+      console.error("搜索达人流程失败:", error);
+      setTags([]);
+      setCreators([]);
+      
+      // 重置表单数据
+      setFormData({
+        productName: productName,
+        tags: [],
+        selectedCreators: []
+      });
+    }
   };
 
   return (
@@ -356,12 +483,21 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
       <CreatorSidebar 
         isOpen={showCreators}
         productName={productName}
-        creators={mockCreators}
+        creators={creators}
+        tags={tags}
         onClose={() => setShowCreators(false)}
         onFormChange={handleFormChange}
+        isLoading={isLoadingCreators}
+        isLoadingTags={isLoadingTags}
       />
     </div>
   );
+};
+
+// 添加在组件外部或组件内部
+const formatNumber = (num: number | undefined | null) => {
+  if (num === undefined || num === null) return '0';
+  return num >= 10000 ? (num / 10000).toFixed(1) + 'w' : num.toString();
 };
 
 export default Chat;

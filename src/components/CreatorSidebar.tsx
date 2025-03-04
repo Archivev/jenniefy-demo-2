@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Creator {
-  name: string;
+  creator_handle: string;
   portrait: string;
   location: string;
   followers: string;
@@ -14,13 +14,28 @@ interface Creator {
   selected?: boolean;
 }
 
-interface CreatorSidebarProps {
+export interface CreatorSidebarProps {
   isOpen: boolean;
   productName: string;
   creators: Creator[];
+  tags: string[];
   onClose: () => void;
-  onFormChange: (formData: any) => void;
+  onFormChange: (newFormData: any, isUserAction?: boolean) => void;
+  isLoading: boolean;
+  isLoadingTags: boolean;
 }
+
+// 添加自定义 TikTok 图标组件
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    className={className}
+    fill="currentColor"
+  >
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+  </svg>
+);
 
 // 模拟SSE接口获取标签
 const fetchTagsSSE = (callback: (tags: string[]) => void) => {
@@ -41,39 +56,9 @@ const fetchTagsSSE = (callback: (tags: string[]) => void) => {
   return () => clearInterval(interval);
 };
 
-// 模拟SSE接口获取创作者
-const fetchCreatorsSSE = (callback: (creators: Creator[]) => void) => {
-  const mockCreators: Creator[] = Array(20).fill(null).map((_, i) => ({
-    name: `Jennifer ${i+1}`,
-    portrait: "18-30",
-    location: "US",
-    followers: `${Math.floor(Math.random() * 100) + 1}W`,
-    er: `${Math.floor(Math.random() * 10) + 1}${Math.floor(Math.random() * 10)}%`,
-    age: "18-30",
-    platforms: ["instagram", "tiktok", "youtube"],
-    period: "10W"
-  }));
-  
-  let index = 0;
-  
-  const interval = setInterval(() => {
-    if (index < mockCreators.length) {
-      // 每次发送一批创作者
-      callback(mockCreators.slice(0, index + 3));
-      index += 3;
-    } else {
-      clearInterval(interval);
-    }
-  }, 500);
-  
-  return () => clearInterval(interval);
-};
-
-const CreatorSidebar = ({ isOpen, productName, creators: initialCreators, onClose, onFormChange }: CreatorSidebarProps) => {
+const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: initialCreators, onClose, onFormChange, isLoading = false, isLoadingTags }: CreatorSidebarProps) => {
   const [tags, setTags] = useState<string[]>([]);
   const [creators, setCreators] = useState<Creator[]>([]);
-  const [isLoadingTags, setIsLoadingTags] = useState(true);
-  const [isLoadingCreators, setIsLoadingCreators] = useState(true);
   const [localProductName, setLocalProductName] = useState(productName);
   const [formData, setFormData] = useState({
     productName: productName,
@@ -81,50 +66,31 @@ const CreatorSidebar = ({ isOpen, productName, creators: initialCreators, onClos
     selectedCreators: [] as string[]
   });
   
-  // 更新表单数据并通知父组件
-  const updateFormData = (newData: Partial<typeof formData>) => {
-    const updatedFormData = { ...formData, ...newData };
-    setFormData(updatedFormData);
-    onFormChange(updatedFormData);
-  };
-  
   // 处理产品名称变更
   const handleProductNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setLocalProductName(newName);
-    updateFormData({ productName: newName });
+    updateFormData({ productName: newName }, true); // 用户主动操作
+  };
+  
+  // 更新表单数据并通知父组件
+  const updateFormData = (newData: Partial<typeof formData>, isUserAction = false) => {
+    const updatedFormData = { ...formData, ...newData };
+    setFormData(updatedFormData);
+    onFormChange(updatedFormData, isUserAction);
   };
   
   useEffect(() => {
     // 使用SSE获取标签
-    setIsLoadingTags(true);
-    const cleanupTags = fetchTagsSSE((fetchedTags) => {
-      setTags(fetchedTags);
-      updateFormData({ tags: fetchedTags });
-      if (fetchedTags.length === 6) { // 假设总共有6个标签
-        setIsLoadingTags(false);
-      }
-    });
-    
-    // 使用SSE获取创作者
-    setIsLoadingCreators(true);
-    const cleanupCreators = fetchCreatorsSSE((fetchedCreators) => {
-      setCreators(fetchedCreators);
-      if (fetchedCreators.length === 20) { // 假设总共有20个创作者
-        setIsLoadingCreators(false);
-      }
-    });
-    
-    return () => {
-      cleanupTags();
-      cleanupCreators();
-    };
-  }, []);
+    setTags(initialTags);
+    // 直接使用传入的创作者数据
+    setCreators(initialCreators);
+  }, [initialCreators, initialTags]); // 添加 initialCreators 作为依赖项
   
   const removeTag = (indexToRemove: number) => {
     const newTags = tags.filter((_, index) => index !== indexToRemove);
     setTags(newTags);
-    updateFormData({ tags: newTags });
+    updateFormData({ tags: newTags }, true); // 用户主动操作
   };
   
   const toggleCreatorSelection = (index: number) => {
@@ -134,9 +100,9 @@ const CreatorSidebar = ({ isOpen, productName, creators: initialCreators, onClos
     
     const selectedCreatorNames = newCreators
       .filter(creator => creator.selected)
-      .map(creator => creator.name);
+      .map(creator => creator.creator_handle);
     
-    updateFormData({ selectedCreators: selectedCreatorNames });
+    updateFormData({ selectedCreators: selectedCreatorNames }, true); // 用户主动操作
   };
 
   return (
@@ -203,64 +169,99 @@ const CreatorSidebar = ({ isOpen, productName, creators: initialCreators, onClos
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 space-y-2 pb-6">
-          {isLoadingCreators ? (
-            <div className="text-center py-4 text-gray-500">加载创作者中...</div>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="relative w-16 h-16 mb-4">
+                <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
+                <div className="absolute top-0 left-0 w-full h-full border-4 border-t-black rounded-full animate-spin"></div>
+              </div>
+              <p className="text-gray-500 animate-pulse">搜索创作者中...</p>
+            </div>
+          ) : creators.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <X className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500">未找到匹配的创作者</p>
+            </div>
           ) : (
-            creators.map((creator, index) => (
-              <div 
-                key={index} 
-                className={`p-4 rounded-xl transition-colors ${creator.selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="space-y-2">
-                    <h3 className="font-medium">{creator.name}</h3>
-                    <div className="flex items-center space-x-3 text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <Instagram className="w-4 h-4" />
-                        <Share2 className="w-4 h-4" />
-                        <Youtube className="w-4 h-4" />
+            <AnimatePresence>
+              {creators.map((creator, index) => (
+                <motion.div
+                  key={creator.creator_handle + index}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ 
+                    duration: 0.3, 
+                    delay: index * 0.1,
+                    type: "spring",
+                    stiffness: 100
+                  }}
+                  className={`p-4 rounded-xl transition-colors ${creator.selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="space-y-2">
+                      <h3 className="font-medium">
+                        <a 
+                          href={`https://www.tiktok.com/@${creator.creator_handle}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:translate-y-[-2px] transition-transform duration-200 inline-block"
+                        >
+                          {creator.creator_handle}
+                        </a>
+                      </h3>
+                      <div className="flex items-center space-x-3 text-gray-500">
+                        <div className="flex items-center space-x-1">
+                          <Instagram className="w-4 h-4" />
+                          <TikTokIcon className="w-4 h-4" />
+                          <Youtube className="w-4 h-4" />
+                        </div>
+                        <span className="text-gray-300">|</span>
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="w-4 h-4" />
+                          <span className="text-sm">{creator.location}</span>
+                        </div>
+                        <span className="text-gray-300">|</span>
+                        <span className="text-sm">{creator.followers} Followers</span>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="w-4 h-4" />
-                        <span className="text-sm">{creator.location}</span>
-                      </div>
-                      <span className="text-sm">{creator.followers}</span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => toggleCreatorSelection(index)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          creator.selected 
+                            ? 'bg-black text-white' 
+                            : 'text-black hover:bg-black hover:text-white'
+                        }`}
+                      >
+                        <Check className="w-5 h-5" />
+                      </button>
+                      <button 
+                        className={`p-2 rounded-lg transition-colors text-black hover:bg-red-500 hover:text-white`}
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={() => toggleCreatorSelection(index)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        creator.selected 
-                          ? 'bg-black text-white' 
-                          : 'text-black hover:bg-black hover:text-white'
-                      }`}
-                    >
-                      <Check className="w-5 h-5" />
-                    </button>
-                    <button 
-                      className={`p-2 rounded-lg transition-colors text-black hover:bg-red-500 hover:text-white`}
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="text-gray-500 mb-1">Portrait</div>
+                      <div className="font-medium">{creator.age}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 mb-1">PV</div>
+                      <div className="font-medium">{creator.followers}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 mb-1">ER</div>
+                      <div className="font-medium">{creator.er}</div>
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <div className="text-gray-500 mb-1">Portrait</div>
-                    <div className="font-medium">{creator.age}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500 mb-1">PV</div>
-                    <div className="font-medium">{creator.followers}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500 mb-1">ER</div>
-                    <div className="font-medium">{creator.er}</div>
-                  </div>
-                </div>
-              </div>
-            ))
+                </motion.div>
+              ))}
+            </AnimatePresence>
           )}
         </div>
 
