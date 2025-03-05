@@ -262,6 +262,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
                 case "initial":
                   // 重置界面
                   setShowCreators(false);
+                  setIsThinking(false);
                   setThinkingComplete(true);
                   setShowThinkingIndicator(false);
                   break;
@@ -398,7 +399,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
           // 获取创作者头像
           let avatarUrl = "";
           try {
-            const avatarResponse = await fetch(`https://api.jennie.im/opensearch/genIndexDataByTtsCreatorId?tts_creator_id=${creator.tts_creator_id}`);
+            const avatarResponse = await fetch(`http://172.24.16.10:8050/prod-api/opensearch/genIndexDataByTtsCreatorId?tts_creator_id=${creator.tts_creator_id}`);
             const avatarData = await avatarResponse.json();
             if (avatarData && avatarData.creatorAuthorIcon) {
               avatarUrl = avatarData.creatorAuthorIcon;
