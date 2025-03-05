@@ -1,5 +1,5 @@
 import { ShoppingBag, Instagram, Youtube, MapPin, Check, Share2, User2, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Creator {
@@ -14,6 +14,7 @@ interface Creator {
   selected?: boolean;
   avatar?: string;
   id?: string;
+  video_ten_avg_vv?: string;
 }
 
 export interface CreatorSidebarProps {
@@ -25,6 +26,7 @@ export interface CreatorSidebarProps {
   onFormChange: (newFormData: any, isUserAction?: boolean) => void;
   isLoading: boolean;
   isLoadingTags: boolean;
+  isRefreshing?: boolean;
 }
 
 // 添加自定义 TikTok 图标组件
@@ -58,7 +60,7 @@ const fetchTagsSSE = (callback: (tags: string[]) => void) => {
   return () => clearInterval(interval);
 };
 
-const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: initialCreators, onClose, onFormChange, isLoading = false, isLoadingTags }: CreatorSidebarProps) => {
+const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: initialCreators, onClose, onFormChange, isLoading = false, isLoadingTags, isRefreshing = false }: CreatorSidebarProps) => {
   const [tags, setTags] = useState<string[]>([]);
   const [creators, setCreators] = useState<Creator[]>([]);
   const [localProductName, setLocalProductName] = useState(productName);
@@ -67,6 +69,44 @@ const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: init
     tags: [] as string[],
     selectedCreators: [] as string[]
   });
+  // 添加新标签的输入状态
+  const [newTagInput, setNewTagInput] = useState("");
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const newTagInputRef = useRef<HTMLInputElement>(null);
+  
+  // 添加一个状态来控制是否显示动画
+  const [shouldAnimate, setShouldAnimate] = useState(true);
+  
+  useEffect(() => {
+    // 当创作者数据变化时，确保启用动画
+    if (initialCreators.length > 0) {
+      // 先禁用动画，然后在下一帧启用，确保新数据有动画效果
+      setShouldAnimate(false);
+      
+      // 使用 requestAnimationFrame 确保在下一帧渲染时启用动画
+      const timeoutId = setTimeout(() => {
+        setShouldAnimate(true);
+      }, 200); // 短暂延迟以确保状态更新
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [initialCreators]);
+  
+  useEffect(() => {
+    // 只在初始加载或标签数量增加时更新标签
+    // 这样可以避免移除标签后又被重新添加回来
+    if (initialTags.length > 0 && (tags.length === 0 || initialTags.length > tags.length)) {
+      setTags(initialTags);
+    }
+    
+    // 直接使用传入的创作者数据
+    setCreators(initialCreators);
+  }, [initialCreators, initialTags]);
+  
+  useEffect(() => {
+    // 当 productName 属性变化时，更新本地状态
+    setLocalProductName(productName);
+  }, [productName]);
   
   // 处理产品名称变更
   const handleProductNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,17 +122,14 @@ const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: init
     onFormChange(updatedFormData, isUserAction);
   };
   
-  useEffect(() => {
-    // 使用SSE获取标签
-    setTags(initialTags);
-    // 直接使用传入的创作者数据
-    setCreators(initialCreators);
-  }, [initialCreators, initialTags]); // 添加 initialCreators 作为依赖项
-  
-  const removeTag = (indexToRemove: number) => {
-    const newTags = tags.filter((_, index) => index !== indexToRemove);
-    setTags(newTags);
-    updateFormData({ tags: newTags }, true); // 用户主动操作
+  // 移除标签
+  const removeTag = (index: number) => {
+    const updatedTags = [...tags];
+    updatedTags.splice(index, 1);
+    setTags(updatedTags);
+    
+    // 通知父组件标签已更改
+    updateFormData({ tags: updatedTags }, true);
   };
   
   const toggleCreatorSelection = (index: number) => {
@@ -106,6 +143,41 @@ const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: init
     
     updateFormData({ selectedCreators: selectedCreatorNames }, true); // 用户主动操作
   };
+
+  // 添加新标签的处理函数
+  const handleAddTag = () => {
+    if (newTagInput.trim()) {
+      const newTag = newTagInput.trim();
+      // 检查标签是否已存在
+      if (!tags.includes(newTag)) {
+        const updatedTags = [...tags, newTag];
+        setTags(updatedTags);
+        updateFormData({ tags: updatedTags }, true); // 用户主动操作
+      }
+      setNewTagInput("");
+      setIsAddingTag(false);
+    } else {
+      setIsAddingTag(false);
+    }
+  };
+  
+  // 处理按键事件，按Enter添加标签，按Esc取消
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    } else if (e.key === 'Escape') {
+      setIsAddingTag(false);
+      setNewTagInput("");
+    }
+  };
+  
+  // 当切换到添加标签模式时，自动聚焦输入框
+  useEffect(() => {
+    if (isAddingTag && newTagInputRef.current) {
+      newTagInputRef.current.focus();
+    }
+  }, [isAddingTag]);
 
   return (
     <div
@@ -141,62 +213,109 @@ const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: init
                 </span>
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            
+            <div className="flex flex-wrap gap-2 min-h-[40px]">
               {isLoadingTags ? (
-                <div className="text-sm text-gray-500">加载标签中...</div>
+                <div className="w-full flex items-center justify-center py-2">
+                  <div className="relative w-5 h-5 mr-2">
+                    <div className="absolute top-0 left-0 w-full h-full border-2 border-gray-200 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-full h-full border-2 border-t-black rounded-full animate-spin"></div>
+                  </div>
+                  <span className="text-sm text-gray-500 animate-pulse">loading tags...</span>
+                </div>
               ) : (
-                <AnimatePresence>
-                  {tags.map((tag, index) => (
+                <>
+                  <AnimatePresence>
+                    {tags.map((tag, index) => (
+                      <motion.div
+                        key={tag}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-center space-x-1 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600"
+                      >
+                        <span>{tag}</span>
+                        <button 
+                          onClick={() => removeTag(index)}
+                          className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  
+                  {isAddingTag ? (
                     <motion.div
-                      key={tag}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: 0.2 }}
                       className="flex items-center space-x-1 px-3 py-1.5 bg-gray-50 rounded-full text-sm text-gray-600"
                     >
-                      <span>{tag}</span>
-                      <button 
-                        onClick={() => removeTag(index)}
-                        className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                      <input
+                        ref={newTagInputRef}
+                        type="text"
+                        value={newTagInput}
+                        onChange={(e) => setNewTagInput(e.target.value)}
+                        onKeyDown={handleTagInputKeyDown}
+                        onBlur={handleAddTag}
+                        placeholder="Add tag..."
+                        className="bg-transparent border-none outline-none w-24 text-sm"
+                      />
                     </motion.div>
-                  ))}
-                </AnimatePresence>
+                  ) : (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileHover={{ scale: 1.05 }}
+                      onClick={() => setIsAddingTag(true)}
+                      className="flex items-center justify-center w-7 h-7 rounded-full bg-gray-50 hover:bg-gray-100 transition-colors py-1.5"
+                      title="Add custom tag"
+                      style={{ marginTop: '3px' }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+                        <path d="M12 5v14M5 12h14"/>
+                      </svg>
+                    </motion.button>
+                  )}
+                </>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 space-y-2 pb-6">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-8">
+        <div className="flex-1 overflow-y-auto px-6 space-y-2 pb-6 relative">
+          {isRefreshing && (
+            <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
               <div className="relative w-16 h-16 mb-4">
                 <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
                 <div className="absolute top-0 left-0 w-full h-full border-4 border-t-black rounded-full animate-spin"></div>
               </div>
-              <p className="text-gray-500 animate-pulse">搜索创作者中...</p>
+              <p className="text-gray-500 animate-pulse">update creators ...</p>
             </div>
-          ) : creators.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                <X className="w-8 h-8 text-gray-400" />
+          )}
+          
+          {isLoading ? (
+            <div className="absolute inset-0 bg-white z-10 flex flex-col items-center justify-center">
+              <div className="relative w-16 h-16 mb-4">
+                <div className="absolute top-0 left-0 w-full h-full border-4 border-gray-200 rounded-full"></div>
+                <div className="absolute top-0 left-0 w-full h-full border-4 border-t-black rounded-full animate-spin"></div>
               </div>
-              <p className="text-gray-500">未找到匹配的创作者</p>
+              <p className="text-gray-500 animate-pulse">searching creators...</p>
             </div>
           ) : (
-            <AnimatePresence>
-              {creators.map((creator, index) => (
+            <AnimatePresence mode="sync">
+              {shouldAnimate && creators.map((creator, index) => (
                 <motion.div
-                  key={creator.creator_handle + index}
+                  key={creator.id || creator.creator_handle + index}
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -20, scale: 0.95 }}
                   transition={{ 
                     duration: 0.3, 
-                    delay: index * 0.1,
+                    delay: index * 0.05, // 减少延迟时间，使动画更快
                     type: "spring",
                     stiffness: 100
                   }}
@@ -211,7 +330,7 @@ const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: init
                             alt={creator.creator_handle} 
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=' + creator.creator_handle.charAt(0).toUpperCase();
+                              (e.target as HTMLImageElement).src = 'https://fakeimg.pl/40/fff/?text=' + creator.creator_handle.charAt(0).toUpperCase();
                             }}
                           />
                         ) : (
@@ -272,7 +391,7 @@ const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: init
                     </div>
                     <div>
                       <div className="text-gray-500 mb-1">PV</div>
-                      <div className="font-medium">{creator.followers}</div>
+                      <div className="font-medium">{creator.video_ten_avg_vv || '-'}</div>
                     </div>
                     <div>
                       <div className="text-gray-500 mb-1">ER</div>
