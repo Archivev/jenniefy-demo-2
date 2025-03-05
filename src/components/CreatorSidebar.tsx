@@ -93,9 +93,10 @@ const CreatorSidebar = ({ isOpen, productName, tags: initialTags, creators: init
   }, [initialCreators]);
   
   useEffect(() => {
-    // 只在初始加载或标签数量增加时更新标签
-    // 这样可以避免移除标签后又被重新添加回来
-    if (initialTags.length > 0 && (tags.length === 0 || initialTags.length > tags.length)) {
+    // 比较标签内容是否有变化
+    const hasNewTags = initialTags.some(tag => !tags.includes(tag));
+    // 在初始加载或有新标签时更新
+    if (initialTags.length > 0 && (tags.length === 0 || hasNewTags)) {
       setTags(initialTags);
     }
     
