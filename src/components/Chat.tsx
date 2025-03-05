@@ -1,4 +1,4 @@
-import { ArrowLeft, User, ShoppingBag, Tag, Search, Mail } from "lucide-react";
+import { ArrowLeft, User, ShoppingBag, Tag, Search, Mail, Trash2 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CreatorSidebar from "./CreatorSidebar";
@@ -30,6 +30,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
   const [previousThinkingStage, setPreviousThinkingStage] = useState<string>("");
   const [animatingStage, setAnimatingStage] = useState<boolean>(false);
   const [showThinkingIndicator, setShowThinkingIndicator] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const typeMessage = useCallback((content: string, callback: () => void) => {
     let index = 0;
@@ -399,7 +400,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
           // 获取创作者头像
           let avatarUrl = "";
           try {
-            const avatarResponse = await fetch(`https://jennie.im/prod-api/opensearch/genIndexDataByTtsCreatorId?tts_creator_id=${creator.tts_creator_id}`);
+            const avatarResponse = await fetch(`http://172.24.16.10:8050/prod-api/opensearch/genIndexDataByTtsCreatorId?tts_creator_id=${creator.tts_creator_id}`);
             const avatarData = await avatarResponse.json();
             if (avatarData && avatarData.creatorAuthorIcon) {
               avatarUrl = avatarData.creatorAuthorIcon;
@@ -582,17 +583,101 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     };
   }, [isThinking, thinkingStartTime, thinkingComplete]);
 
+  // 添加清除记忆的处理函数
+  const handleClearMemory = async () => {
+    // 添加确认对话框
+    if (!window.confirm("确定要清除所有对话记忆吗？此操作不可撤销。")) {
+      return;
+    }
+    
+    setIsClearing(true);
+    
+    try {
+      // 调用后端接口清除记忆
+      const response = await fetch('http://localhost:5001/clear_memory', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // 重置前端状态
+        setMessages([]);
+        setInputValue("");
+        setIsThinking(false);
+        setCurrentTypingIndex(-1);
+        setDisplayedContent("");
+        setShowCreators(false);
+        setProductName("");
+        setFormData({
+          productName: "",
+          tags: [],
+          selectedCreators: []
+        });
+        setCreators([]);
+        setTags([]);
+        setIsLoadingCreators(false);
+        setIsLoadingTags(false);
+        setIsRefreshingCreators(false);
+        setThinkingStage("");
+        setThinkingStartTime(null);
+        setThinkingElapsedTime(0);
+        setThinkingComplete(false);
+        setPreviousThinkingStage("");
+        setAnimatingStage(false);
+        setShowThinkingIndicator(false);
+        
+        // 添加系统消息提示用户记忆已清除
+        setMessages([{
+          role: "assistant",
+          content: "Memory has been cleared. You can start a new conversation."
+        }]);
+      } else {
+        console.error("清除记忆失败:", data.error);
+      }
+    } catch (error) {
+      console.error("清除记忆请求出错:", error);
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   return (
     <div className={`flex h-screen transition-all duration-500 ${showCreators ? 'w-[50%]' : 'w-[100%]'}`}>
       <div className="flex-1 flex flex-col min-w-0">
         <header className="border-b border-gray-100 py-4 px-6 bg-white flex-shrink-0">
-          <div className="max-w-4xl mx-auto flex items-center">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
             <button 
               onClick={onBack}
               className="flex items-center text-gray-600 hover:text-gray-900"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               <span>Promoting by Jennie</span>
+            </button>
+            
+            <button 
+              onClick={handleClearMemory}
+              disabled={isClearing}
+              className={`flex items-center px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                isClearing 
+                  ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed' 
+                  : 'text-red-600 hover:text-red-800 border border-red-200 hover:border-red-400'
+              }`}
+            >
+              {isClearing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mr-1"></div>
+                  <span>清除中...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  <span>clear memory</span>
+                </>
+              )}
             </button>
           </div>
         </header>
