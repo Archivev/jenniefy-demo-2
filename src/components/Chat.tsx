@@ -184,7 +184,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     
     try {
       // 创建 EventSource 连接
-      const eventSource = new EventSource(`http://localhost:5001/chat?message=${encodeURIComponent(input)}`);
+      const eventSource = new EventSource(`https://cea6-183-14-31-25.ngrok-free.app/chat?message=${encodeURIComponent(input)}`);
       
       // 创建一个空的AI响应
       const aiResponse = { role: "assistant", content: "" };
@@ -328,7 +328,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     setIsLoadingTags(true);
     
     try {
-      const response = await fetch('http://localhost:5001/get_tags', {
+      const response = await fetch('https://cea6-183-14-31-25.ngrok-free.app/get_tags', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -382,7 +382,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         }
       };
       
-      const response = await fetch('http://localhost:5001/search_creators', {
+      const response = await fetch('https://cea6-183-14-31-25.ngrok-free.app/search_creators', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -594,7 +594,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     
     try {
       // 调用后端接口清除记忆
-      const response = await fetch('http://localhost:5001/clear_memory', {
+      const response = await fetch('https://cea6-183-14-31-25.ngrok-free.app/clear_memory', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
