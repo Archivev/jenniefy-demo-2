@@ -397,17 +397,6 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         setThinkingStage("已找到匹配的创作者");
         setThinkingComplete(true);
         const formattedCreators = await Promise.all(data.creators.map(async (creator: any) => {
-          // 获取创作者头像
-          let avatarUrl = "";
-          try {
-            const avatarResponse = await fetch(`https://api.jennie.im/opensearch/genIndexDataByTtsCreatorId?tts_creator_id=${creator.tts_creator_id}`);
-            const avatarData = await avatarResponse.json();
-            if (avatarData && avatarData.creatorAuthorIcon) {
-              avatarUrl = avatarData.creatorAuthorIcon;
-            }
-          } catch (error) {
-            console.error("获取创作者头像失败:", error);
-          }
           
           return {
             creator_handle: creator.creator_handle,
@@ -420,7 +409,7 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
             platforms: ["instagram", "tiktok", "youtube"],
             period: "10W",
             id: creator.tts_creator_id,
-            avatar: avatarUrl // 添加头像URL
+            avatar: creator.creator_author_icon
           };
         }));
         
