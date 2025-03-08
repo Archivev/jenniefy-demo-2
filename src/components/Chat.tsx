@@ -183,8 +183,16 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     setThinkingStage("");
     
     try {
-      // 创建 EventSource 连接
-      const eventSource = new EventSource(`https://cea6-183-14-31-25.ngrok-free.app/chat?message=${encodeURIComponent(input)}`);
+      // 创建 EventSource 连接，添加 conversation_id 参数
+      const url = new URL('https://cea6-183-14-31-25.ngrok-free.app/chat');
+      url.searchParams.append('message', input);
+      
+      // 如果存在 conversation_id，则添加到请求中
+      if (formData?.conversation_id) {
+        url.searchParams.append('conversation_id', formData.conversation_id);
+      }
+      
+      const eventSource = new EventSource(url.toString());
       
       // 创建一个空的AI响应
       const aiResponse = { role: "assistant", content: "" };
@@ -226,6 +234,14 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
             // 检查并处理状态更新
             if (data.state) {
               
+              // 如果返回了 conversation_id，保存到 formData 中
+              if (data.conversation_id) {
+                setFormData(prev => ({
+                  ...prev,
+                  conversation_id: data.conversation_id
+                }));
+              }
+              
               // 根据不同状态执行不同操作
               switch (data.state) {
                 case "searchinginfluencers":
@@ -235,7 +251,8 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
                   // 同时更新 formData 中的 productName
                   setFormData(prev => ({
                     ...prev,
-                    productName: data.product_name
+                    productName: data.product_name,
+                    conversation_id: data.conversation_id || prev?.conversation_id
                   }));
                   // 发起达人搜索请求，传递选项
                   searchCreators(options);
@@ -248,7 +265,8 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
                     // 更新表单数据
                     setFormData(prev => ({
                       ...prev,
-                      tags: data.tags
+                      tags: data.tags,
+                      conversation_id: data.conversation_id || prev?.conversation_id
                     }));
                     
                     // 如果需要，可以在这里触发创作者搜索
@@ -328,14 +346,22 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     setIsLoadingTags(true);
     
     try {
+      // 构建请求体，添加 conversation_id
+      const requestBody: any = {
+        additional_query: userMessage
+      };
+      
+      // 如果存在 conversation_id，则添加到请求体中
+      if (formData?.conversation_id) {
+        requestBody.conversation_id = formData.conversation_id;
+      }
+      
       const response = await fetch('https://cea6-183-14-31-25.ngrok-free.app/get_tags', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          additional_query: userMessage
-        })
+        body: JSON.stringify(requestBody)
       });
       
       const data = await response.json();
@@ -347,7 +373,9 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         // 更新表单数据中的标签
         setFormData(prev => ({
           ...prev,
-          tags: fetchedTags
+          tags: fetchedTags,
+          // 如果返回了 conversation_id，保存到 formData 中
+          conversation_id: data.conversation_id || prev?.conversation_id
         }));
         
         return fetchedTags;
@@ -373,14 +401,19 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     }
     
     try {
-      // 构建请求体
-      const requestBody = {
+      // 构建请求体，添加 conversation_id
+      const requestBody: any = {
         query: userMessage,
         product_info: {
           name: productName,
           category: "" // 如果有类目信息，可以在这里添加
         }
       };
+      
+      // 如果存在 conversation_id，则添加到请求体中
+      if (formData?.conversation_id) {
+        requestBody.conversation_id = formData.conversation_id;
+      }
       
       const response = await fetch('https://cea6-183-14-31-25.ngrok-free.app/search_creators', {
         method: 'POST',
@@ -415,10 +448,11 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         
         setCreators(formattedCreators);
         
-        // 更新表单数据中的创作者
+        // 更新表单数据中的创作者和 conversation_id
         setFormData(prev => ({
           ...prev,
-          selectedCreators: []
+          selectedCreators: [],
+          conversation_id: data.conversation_id || prev?.conversation_id
         }));
       } else {
         console.error("获取创作者失败:", data.error);
@@ -582,12 +616,21 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
     setIsClearing(true);
     
     try {
-      // 调用后端接口清除记忆
-      const response = await fetch('https://cea6-183-14-31-25.ngrok-free.app/clear_memory', {
+      // 调用后端接口清除记忆，传递 conversation_id
+      const url = new URL('https://cea6-183-14-31-25.ngrok-free.app/clear_memory');
+      const requestBody: any = {};
+      
+      // 如果存在 conversation_id，则添加到请求体中
+      if (formData?.conversation_id) {
+        requestBody.conversation_id = formData.conversation_id;
+      }
+      
+      const response = await fetch(url.toString(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify(requestBody)
       });
       
       const data = await response.json();
@@ -604,7 +647,8 @@ const Chat = ({ onBack, initialMessage }: ChatProps) => {
         setFormData({
           productName: "",
           tags: [],
-          selectedCreators: []
+          selectedCreators: [],
+          conversation_id: null // 清除 conversation_id
         });
         setCreators([]);
         setTags([]);
